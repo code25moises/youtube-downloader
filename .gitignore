@@ -1,0 +1,11 @@
+# Dependencias de Node.js (Frontend)
+frontend/node_modules
+frontend/build
+
+# Entorno virtual de Python (Backend)
+backend/venv
+backend/__pycache__
+
+# Archivos de Sistema y Editor
+.DS_Store
+.vscode
