@@ -15,7 +15,10 @@ from typing import Optional, List
 app = FastAPI()
 
 # --- Configuración de CORS ---
-origins = ["http://localhost:3000"]
+origins = [
+    "http://localhost:3000"
+    "https://youtube-downloader-frontend-843.pages.dev"
+    ]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,

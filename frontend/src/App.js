@@ -3,6 +3,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 
+// --- CAMBIO CLAVE: URL del Backend de Producción ---
+const BACKEND_URL = 'https://youtube-downloader-7f9v.onrender.com';
+
 function App() {
   const [url, setUrl] = useState('');
   const [jobId, setJobId] = useState(null);
@@ -28,7 +31,7 @@ function App() {
     }
     setIsUrlValid(true); setIsLoading(true); setPreviewInfo(null); setAvailableFormats([]);
 
-    fetch('http://localhost:8000/video-details', {
+    fetch(`${BACKEND_URL}/video-details`, { // <-- USA LA NUEVA URL
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url: pastedUrl }),
@@ -44,23 +47,19 @@ function App() {
   };
 
   const handleUrlChange = (e) => {
-    const newUrl = e.target.value;
-    setUrl(newUrl);
+    const newUrl = e.target.value; setUrl(newUrl);
     if (newUrl === '') {
       setPreviewInfo(null); setIsLoading(false); setIsUrlValid(false); setAvailableFormats([]);
     }
   };
 
   const handlePaste = (e) => {
-    const pastedText = e.clipboardData.getData('text');
-    setUrl(pastedText);
-    fetchDetails(pastedText);
+    const pastedText = e.clipboardData.getData('text'); setUrl(pastedText); fetchDetails(pastedText);
   };
 
-  // --- NUEVA FUNCIÓN PARA 'Enter' ---
   const handleKeyPress = (event) => {
     if (event.key === 'Enter') {
-      event.preventDefault(); // Evita que el formulario se envíe
+      event.preventDefault();
       fetchDetails(url);
     }
   };
@@ -71,7 +70,7 @@ function App() {
     setJobId(null); setStatus(`Iniciando descarga...`); setProgress(0);
     setDownloadJobId(null); setErrorMessage(''); clearInterval(intervalRef.current);
 
-    fetch('http://localhost:8000/start-processing', {
+    fetch(`${BACKEND_URL}/start-processing`, { // <-- USA LA NUEVA URL
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ url: url, format_type: formatType, quality: quality, title: previewInfo.title, artist: previewInfo.artist }),
@@ -102,7 +101,7 @@ function App() {
   }, [qualityMenuRef]);
 
   const checkStatus = (id) => {
-    fetch(`http://localhost:8000/status/${id}`)
+    fetch(`${BACKEND_URL}/status/${id}`) // <-- USA LA NUEVA URL
       .then(response => response.json())
       .then(data => {
         setStatus(data.status); setProgress(data.progress); setErrorMessage(data.error_message);
@@ -133,7 +132,7 @@ function App() {
             value={url}
             onChange={handleUrlChange}
             onPaste={handlePaste}
-            onKeyPress={handleKeyPress} // --- CAMBIO: Usamos onKeyPress en lugar de onBlur
+            onKeyPress={handleKeyPress}
             placeholder="https://www.youtube.com/watch?v=..."
           />
         </form>
@@ -159,10 +158,11 @@ function App() {
 
         {jobId && (<div className="status-section"> <p className="status-text">Estado: <strong>{status}</strong></p> <div className="progress-bar-container"><div className="progress-bar-fill" style={{ width: `${progress}%` }}></div></div> </div>)}
         {status === 'failed' && (<div className="download-section" style={{ backgroundColor: '#ffebe9', marginTop: '20px' }}> <p className="download-ready-text" style={{ color: '#d93025' }}>Error</p> <p style={{ color: '#d93025' }}>{errorMessage || 'Ocurrió un error desconocido.'}</p> </div>)}
+
         {downloadJobId && status === 'completed' && (
           <div className="download-section">
             <p className="download-ready-text">¡Tu video está listo!</p>
-            <a href={`http://localhost:8000/download/${downloadJobId}`} className="final-download-link">
+            <a href={`${BACKEND_URL}/download/${downloadJobId}`} className="final-download-link"> {/* <-- USA LA NUEVA URL */}
               Descargar Archivo
             </a>
           </div>
