@@ -1,0 +1,296 @@
+/* frontend/src/App.css */
+
+/* --- Reseteo y Estilos Base --- */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f0f2f5;
+}
+
+.App {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  padding: 5vh 20px;
+  box-sizing: border-box;
+}
+
+.downloader-card {
+  width: 100%;
+  max-width: 600px;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  text-align: center;
+}
+
+h1 {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #1d1d1f;
+  margin-top: 0;
+  margin-bottom: 15px;
+}
+
+p {
+  color: #5a5a5f;
+  margin-bottom: 30px;
+}
+
+/* --- Formulario --- */
+.url-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.url-input {
+  width: 100%;
+  padding: 15px 20px;
+  font-size: 1rem;
+  border-radius: 12px;
+  border: 1px solid #d2d2d7;
+  background-color: #f5f5f7;
+  outline: none;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  box-sizing: border-box;
+}
+
+.url-input:focus {
+  border-color: #007aff;
+  box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.15);
+}
+
+/* --- Botones Genéricos y Grupo --- */
+.download-button {
+  padding: 15px 25px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: white;
+  background-image: linear-gradient(to right, #007aff, #00c6ff);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-grow: 1;
+}
+
+.download-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.download-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 122, 255, 0.3);
+}
+
+.button-group {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 30px;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.audio-button {
+  background-image: linear-gradient(to right, #6a11cb, #2575fc);
+}
+
+.audio-button:hover:not(:disabled) {
+  box-shadow: 0 4px 15px rgba(106, 17, 203, 0.3);
+}
+
+/* --- NUEVO: ESTILOS MINIMALISTAS DEL BOTÓN DIVIDIDO --- */
+.split-button-container {
+  position: relative;
+  display: flex;
+  width: 100%;
+  border-radius: 12px;
+  background-image: linear-gradient(to right, #007aff, #00c6ff);
+  transition: all 0.2s ease;
+}
+
+.split-button-container:hover:not([data-disabled="true"]) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 122, 255, 0.3);
+}
+
+.split-button-container[data-disabled="true"] {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.split-button-main,
+.split-button-trigger {
+  background: transparent;
+  border: none;
+  color: white;
+  padding: 15px 0;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.split-button-main {
+  flex-grow: 1;
+  text-align: center;
+  padding-left: 50px;
+  /* Compensa el ancho del trigger */
+}
+
+.split-button-trigger {
+  width: 50px;
+  border-left: 1px solid rgba(255, 255, 255, 0.3);
+  font-size: 0.8rem;
+}
+
+.quality-menu {
+  position: absolute;
+  top: 110%;
+  left: 0;
+  width: 100%;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+  z-index: 10;
+  overflow: hidden;
+  animation: fadeIn 0.2s ease;
+}
+
+.quality-menu-item {
+  display: block;
+  width: 100%;
+  padding: 15px 20px;
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 1rem;
+  color: #333;
+  cursor: pointer;
+}
+
+.quality-menu-item:hover {
+  background-color: #f5f5f7;
+}
+
+/* --- Otras Secciones --- */
+.status-section,
+.video-preview,
+.download-section {
+  margin-top: 30px;
+  width: 100%;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.status-text {
+  margin-top: 15px;
+  margin-bottom: 15px;
+}
+
+.video-preview {
+  background-color: #f5f5f7;
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 20px;
+}
+
+.preview-thumbnail {
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+  border-radius: 12px;
+  object-fit: cover;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.preview-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0;
+}
+
+.progress-bar-container {
+  width: 100%;
+  height: 8px;
+  background-color: #e9ecef;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  width: 0%;
+  background-image: linear-gradient(to right, #007aff, #00c6ff);
+  border-radius: 4px;
+  transition: width 0.3s ease-in-out;
+}
+
+.download-section {
+  padding: 20px;
+  background-color: #f5f5f7;
+  border-radius: 12px;
+}
+
+.final-download-link {
+  display: inline-block;
+  text-decoration: none;
+  padding: 12px 25px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: white;
+  background-image: linear-gradient(to right, #13D288, #00c67f);
+  border-radius: 12px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.final-download-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(19, 210, 136, 0.3);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* --- MEDIA QUERIES --- */
+@media (min-width: 600px) {
+  .button-group {
+    flex-direction: row;
+    justify-content: center;
+  }
+
+  .video-preview {
+    flex-direction: row;
+    text-align: left;
+  }
+
+  .preview-thumbnail {
+    width: 180px;
+    height: 135px;
+  }
+}
