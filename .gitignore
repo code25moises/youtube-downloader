@@ -9,3 +9,5 @@ backend/__pycache__
 # Archivos de Sistema y Editor
 .DS_Store
 .vscode
+
+frontend/package-lock.json
