@@ -16,7 +16,6 @@ app = FastAPI()
 
 # --- Configuración de CORS ---
 origins = ["*"]
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -60,16 +59,23 @@ def sanitize_filename(name: str) -> str:
     cleaned_name = re.sub(r'[\\/*?:"<>|]', '', cleaned_name)
     return cleaned_name.strip()
 
-# --- Función de Tarea Real (sin cambios) ---
+# --- Función de Tarea Real ---
 def process_video_task(job_id: str, youtube_url: str, format_type: str, quality: Optional[str], title: str, artist: str):
-    # ... (El resto de esta función no necesita cambios)
     print(f"Iniciando trabajo '{format_type}' @ '{quality}': {job_id}")
     jobs[job_id]['status'] = 'processing'
     jobs[job_id]['progress'] = 10
+
     try:
         clean_title = sanitize_filename(title)
         clean_artist = sanitize_filename(artist)
-        base_command = ["yt-dlp", "--no-playlist", "--add-metadata", "--embed-thumbnail", "--parse-metadata", f"{clean_artist}:%(artist)s", "--parse-metadata", f"{clean_artist}:%(album)s"]
+
+        # --- CAMBIO CLAVE: AÑADIMOS USER-AGENT ---
+        base_command = [
+            "yt-dlp", "--no-playlist", "--add-metadata", "--embed-thumbnail",
+            "--parse-metadata", f"{clean_artist}:%(artist)s",
+            "--parse-metadata", f"{clean_artist}:%(album)s",
+            "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36"
+        ]
         
         if clean_title.lower().startswith(clean_artist.lower()):
             base_filename = clean_title
@@ -105,7 +111,11 @@ def process_video_task(job_id: str, youtube_url: str, format_type: str, quality:
 @app.post("/video-details", response_model=VideoDetails)
 def get_video_details(request: InfoRequest):
     try:
-        command = ["yt-dlp", "--no-playlist", "--print-json", "--skip-download", request.url]
+        # --- CAMBIO CLAVE: AÑADIMOS USER-AGENT ---
+        command = [
+            "yt-dlp", "--no-playlist", "--print-json", "--skip-download", request.url,
+            "--user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36"
+        ]
         result = subprocess.run(command, check=True, capture_output=True, text=True, timeout=30)
         video_data = json.loads(result.stdout)
         
@@ -126,17 +136,13 @@ def get_video_details(request: InfoRequest):
 
         return VideoDetails(title=parsed_title, thumbnail=video_data.get("thumbnail", ""), uploader=parsed_artist, formats=final_formats)
     
-    # --- CAMBIO CLAVE: MEJORAR EL LOG DE ERRORES ---
     except subprocess.CalledProcessError as e:
-        # Si yt-dlp falla, imprimimos el error completo en la bitácora
         print(f"ERROR DETALLADO de yt-dlp: {e.stderr}")
         raise HTTPException(status_code=400, detail=f"yt-dlp falló: {e.stderr.strip().splitlines()[-1]}")
     except Exception as e:
-        # Para cualquier otro error, también lo imprimimos
         print(f"ERROR INESPERADO al obtener detalles: {e}")
         raise HTTPException(status_code=500, detail="Error interno del servidor al procesar la URL.")
 
-# ... (El resto de los endpoints no necesitan cambios) ...
 @app.post("/start-processing", status_code=202)
 def start_processing_endpoint(request: JobRequest, background_tasks: BackgroundTasks):
     job_id = str(uuid.uuid4())
