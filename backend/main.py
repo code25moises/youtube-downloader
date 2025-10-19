@@ -15,10 +15,9 @@ from typing import Optional, List
 app = FastAPI()
 
 # --- Configuración de CORS ---
-origins = [
-    "http://localhost:3000"
-    "https://youtube-downloader-frontend-843.pages.dev"
-    ]
+# --- Configuración de CORS ---
+origins = ["*"] # <-- Permite que tu frontend en Cloudflare (y cualquier otro) se comunique.
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
