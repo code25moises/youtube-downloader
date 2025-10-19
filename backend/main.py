@@ -15,8 +15,7 @@ from typing import Optional, List
 app = FastAPI()
 
 # --- Configuración de CORS ---
-# --- Configuración de CORS ---
-origins = ["*"] # <-- Permite que tu frontend en Cloudflare (y cualquier otro) se comunique.
+origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
@@ -61,35 +60,28 @@ def sanitize_filename(name: str) -> str:
     cleaned_name = re.sub(r'[\\/*?:"<>|]', '', cleaned_name)
     return cleaned_name.strip()
 
-# --- Función de Tarea Real ---
+# --- Función de Tarea Real (sin cambios) ---
 def process_video_task(job_id: str, youtube_url: str, format_type: str, quality: Optional[str], title: str, artist: str):
+    # ... (El resto de esta función no necesita cambios)
     print(f"Iniciando trabajo '{format_type}' @ '{quality}': {job_id}")
     jobs[job_id]['status'] = 'processing'
     jobs[job_id]['progress'] = 10
-
     try:
         clean_title = sanitize_filename(title)
         clean_artist = sanitize_filename(artist)
-
-        base_command = [
-            "yt-dlp", "--no-playlist", "--add-metadata", "--embed-thumbnail",
-            "--parse-metadata", "%(uploader)s:%(artist)s",
-            "--parse-metadata", "%(uploader)s:%(album)s",
-        ]
+        base_command = ["yt-dlp", "--no-playlist", "--add-metadata", "--embed-thumbnail", "--parse-metadata", f"{clean_artist}:%(artist)s", "--parse-metadata", f"{clean_artist}:%(album)s"]
         
-        # --- LÓGICA DE NOMBRE DE ARCHIVO SIMPLIFICADA ---
-        # Ahora confiamos en que el título y el artista vienen limpios del frontend
-        base_filename = f"{clean_artist} - {clean_title}"
+        if clean_title.lower().startswith(clean_artist.lower()):
+            base_filename = clean_title
+        else:
+            base_filename = f"{clean_artist} - {clean_title}"
 
         if format_type == 'video':
-            server_filename = f"{job_id}.mp4"
-            user_filename = f"{base_filename}.mp4"
+            server_filename, user_filename = f"{job_id}.mp4", f"{base_filename}.mp4"
         elif format_type == 'audio':
-            server_filename = f"{job_id}.mp3"
-            user_filename = f"{base_filename}.mp3"
-        else:
-            raise ValueError("Tipo de formato no válido")
-
+            server_filename, user_filename = f"{job_id}.mp3", f"{base_filename}.mp3"
+        else: raise ValueError("Invalid format type")
+        
         output_path = os.path.join(DOWNLOADS_DIR, server_filename)
         
         if format_type == 'video':
@@ -98,26 +90,16 @@ def process_video_task(job_id: str, youtube_url: str, format_type: str, quality:
                 quality_val = quality.replace('p', '')
                 format_selector = f"bestvideo[height<=?{quality_val}][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4][height<=?{quality_val}]"
             command = base_command + ["-f", format_selector, "--merge-output-format", "mp4", "-o", output_path, youtube_url]
-        else: # Audio
+        else:
             command = base_command + ["-f", "bestaudio", "--extract-audio", "--audio-format", "mp3", "--audio-quality", "0", "-o", output_path, youtube_url]
 
-        jobs[job_id]['progress'] = 50
         subprocess.run(command, check=True, capture_output=True, text=True, timeout=300)
-        
-        jobs[job_id]['progress'] = 100
-        jobs[job_id]['status'] = 'completed'
-        jobs[job_id]['download_url'] = job_id
-        jobs[job_id]['filename'] = user_filename
-        jobs[job_id]['filepath'] = output_path
-        print(f"Trabajo completado: {job_id}")
-
+        jobs[job_id]['progress'] = 100; jobs[job_id]['status'] = 'completed'; jobs[job_id]['download_url'] = job_id; jobs[job_id]['filename'] = user_filename; jobs[job_id]['filepath'] = output_path
     except Exception as e:
         error_message = "Ocurrió un error inesperado."
         if isinstance(e, subprocess.TimeoutExpired): error_message = "El proceso tardó demasiado."
         elif isinstance(e, subprocess.CalledProcessError): error_message = e.stderr.strip().split('\n')[-1]
-        print(f"Error en el trabajo {job_id}: {error_message}")
-        jobs[job_id]['status'] = 'failed'
-        jobs[job_id]['error_message'] = error_message
+        jobs[job_id]['status'] = 'failed'; jobs[job_id]['error_message'] = error_message
 
 # --- Endpoints de la API ---
 @app.post("/video-details", response_model=VideoDetails)
@@ -127,11 +109,9 @@ def get_video_details(request: InfoRequest):
         result = subprocess.run(command, check=True, capture_output=True, text=True, timeout=30)
         video_data = json.loads(result.stdout)
         
-        # --- LÓGICA DE PARSEO MEJORADA ---
-        # yt-dlp es bueno analizando 'artist' y 'track'. Los usamos si están disponibles.
         parsed_artist = video_data.get("artist") or video_data.get("uploader", "Artista Desconocido")
         parsed_title = video_data.get("track") or video_data.get("title", "Título no disponible")
-
+        
         available_heights = set()
         for f in video_data.get("formats", []):
             if f.get("vcodec") != "none" and f.get("height"):
@@ -139,21 +119,24 @@ def get_video_details(request: InfoRequest):
         
         desired_qualities_map = { '1440p': 1440, '1080p': 1080, '720p': 720, '480p': 480, '360p': 360, '240p': 240 }
         final_formats = ['best']
-        
         for label, height_val in desired_qualities_map.items():
             if any(h >= height_val for h in available_heights):
                 if label not in final_formats:
                     final_formats.append(label)
 
-        return VideoDetails(
-            title=parsed_title, # Devolvemos el título analizado
-            thumbnail=video_data.get("thumbnail", ""),
-            uploader=parsed_artist, # Devolvemos el artista analizado
-            formats=final_formats
-        )
-    except Exception:
-        raise HTTPException(status_code=400, detail="No se pudo obtener la información del video.")
+        return VideoDetails(title=parsed_title, thumbnail=video_data.get("thumbnail", ""), uploader=parsed_artist, formats=final_formats)
+    
+    # --- CAMBIO CLAVE: MEJORAR EL LOG DE ERRORES ---
+    except subprocess.CalledProcessError as e:
+        # Si yt-dlp falla, imprimimos el error completo en la bitácora
+        print(f"ERROR DETALLADO de yt-dlp: {e.stderr}")
+        raise HTTPException(status_code=400, detail=f"yt-dlp falló: {e.stderr.strip().splitlines()[-1]}")
+    except Exception as e:
+        # Para cualquier otro error, también lo imprimimos
+        print(f"ERROR INESPERADO al obtener detalles: {e}")
+        raise HTTPException(status_code=500, detail="Error interno del servidor al procesar la URL.")
 
+# ... (El resto de los endpoints no necesitan cambios) ...
 @app.post("/start-processing", status_code=202)
 def start_processing_endpoint(request: JobRequest, background_tasks: BackgroundTasks):
     job_id = str(uuid.uuid4())
